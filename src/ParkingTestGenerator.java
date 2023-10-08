@@ -62,33 +62,87 @@ public class ParkingTestGenerator {
                 default -> System.out.println("Couldn't append to the valid hour");
             }
         }
-        hour.append((char)(rand.nextInt(6) + '0')).append((char)(rand.nextInt(10) + '0'));
+        hour.append('.').append((char)(rand.nextInt(6) + '0')).append((char)(rand.nextInt(10) + '0'));
         return hour.toString();
     }
 
-    private void generatePaymentTest(){
+    private String createInvalidHour(){
+        int typeOfInvalidHour = rand.nextInt(2);
+        if(typeOfInvalidHour == 0){//Let's make a valid hour and then
+            //make it invalid
+            StringBuilder hour = new StringBuilder(createValidHour());
+            int appendingLimit = rand.nextInt(100);
+            ++appendingLimit;
+            for(int i = 0; i < appendingLimit; ++i){
+                hour.append((char)(rand.nextInt('z'-'0') + '0'));
+            }
+
+            return hour.toString();
+        }
+        else{//let's build an invalid string from the ground-up
+            StringBuilder registration = new StringBuilder();
+            int appendingLimit = rand.nextInt(100);
+            ++appendingLimit;
+            for(int i = 0; i < appendingLimit; ++i){
+                registration.append((char)(rand.nextInt('z'-'0') + '0'));
+            }
+            registration.append('!');
+            return registration.toString();
+        }
+    }
+
+    private void generatePaymentTest(int lineNumber){
         //1. Generate Registration
+        int typeOfTheRegistration = rand.nextInt(2);
+        StringBuilder test = new StringBuilder();
+        if(typeOfTheRegistration == 0){//We will make a test with a valid registration
+            test.append(createValidRegistration());
+        }
+        else{//We will make a test with an invalid registration
+            test.append(createInvalidHour());
+        }
+        test.append(" ");
 
         //2. Generate beg and end hours
+        int typeOfTheBegHour = rand.nextInt(2);
+        if(typeOfTheBegHour == 0){//Test with the valid beg hour
+            test.append(createValidHour());
+        }
+        else{//Test with the invalid beg hour
+            test.append(createInvalidHour());
+        }
+        test.append(" ");
 
+        int typeOfTheEndHour = rand.nextInt(2);
+        if(typeOfTheEndHour == 0){//Test with the valid end hour
+            test.append(createValidHour());
+        }
+        else{//Test with the invalid end hour
+            test.append(createInvalidHour());
+        }
+
+        //Test can (but doesn't have to) end with " ",
+        // and it shouldn't have any impact on the result
+        if(rand.nextInt(2) == 1){test.append(" ");}
         //3. add to the respective data structures
+
     }
-    private void generateValidationTest(){
+    private void generateValidationTest(int lineNumber){
 
     }
 
-    public void generateTest(){
+    public void generateTest(int lineNumber){
         if(generatedPayments.isEmpty()){//we have no cars to test
-            generatePaymentTest();
+            generatePaymentTest(lineNumber);
         }
         else{//we have cars to test
             int typeOfTestToGenerate = rand.nextInt(10);
             ++typeOfTestToGenerate;
             if(typeOfTestToGenerate%2 == 0){
-                generatePaymentTest();
+                generatePaymentTest(lineNumber);
             }
             else{
-                generateValidationTest();
+                generateValidationTest(lineNumber);
             }
         }
     }
