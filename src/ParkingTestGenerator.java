@@ -1,12 +1,40 @@
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.Random.*;
 
 public class ParkingTestGenerator {
-    private static final int TEST_SIZE = 100;
-    private static final Random rand = new Random();
+    private final Random rand = new Random();
+    private Path inPath = null;
+    private Path outPath = null;
+    private List<String> textToWriteInFile = new ArrayList<>();
+    private List<String> textToWriteOutFile = new ArrayList<>();
     private List<String> generatedRegistrationsForToday = new ArrayList<>();
     private List<String> generatedRegistrationsForTomorrow = new ArrayList<>();
     private Map<String, String[]> generatedPayments = new HashMap<>();
+
+    private boolean createPaths(){
+        try {
+            inPath = Paths.get("test.in");
+        }
+        catch(Exception e){
+            System.out.println("Failed to find the specified inPath.");
+            return false;
+        }
+        try {
+            outPath = Paths.get("test.out");
+        }
+        catch(Exception e){
+            System.out.println("Failed to find the specified outPath.");
+            return false;
+        }
+
+        return true;
+    }
 
     private String createValidRegistration(){
         StringBuilder registration = new StringBuilder();
@@ -34,7 +62,7 @@ public class ParkingTestGenerator {
             for(int i = 0; i < appendingLimit; ++i){
                 registration.append((char)(rand.nextInt('z'-'0') + '0'));
             }
-
+            registration.append('!');
             return registration.toString();
         }
         else{//let's build an invalid string from the ground-up
@@ -54,7 +82,28 @@ public class ParkingTestGenerator {
             return createValidRegistration();
         }
         else{//We will make a test with an invalid registration
-            return createInvalidHour();
+            return createInvalidRegistration();
+        }
+    }
+
+    private String useExistingRegistration(int dayToUse){
+        if(dayToUse == 0){//test for today
+            if(!generatedRegistrationsForToday.isEmpty()){
+                int iter = rand.nextInt(generatedRegistrationsForToday.size());
+                return generatedRegistrationsForToday.get(iter);
+            }
+            else{
+                return "";
+            }
+        }
+        else {//test for tomorrow
+            if(!generatedRegistrationsForTomorrow.isEmpty()){
+                int iter = rand.nextInt(generatedRegistrationsForTomorrow.size());
+                return generatedRegistrationsForTomorrow.get(iter);
+            }
+            else{
+                return "";
+            }
         }
     }
 
@@ -109,6 +158,25 @@ public class ParkingTestGenerator {
         }
     }
 
+    //Hours are guaranteed to be between beg and end, but not minutes.
+    private String createHourBasedOnOtherHours(int beg, int end){
+        StringBuilder result = new StringBuilder();
+        if(beg < end){
+            int hours = (beg/100) - (end/100);
+            result.append((char)(rand.nextInt(hours)+8)).append('.').append((char)(rand.nextInt(60)));
+        }
+        else{
+            if(rand.nextInt(2) == 0){//check yesterday
+                result.append((char)(rand.nextInt(20-beg)+beg)).append('.').append((char)(rand.nextInt(60)));
+            }
+            else{//check tomorrow
+                result.append((char)(rand.nextInt(end-8)+8)).append('.').append((char)(rand.nextInt(60)));
+            }
+        }
+
+        return result.toString();
+    }
+
     //Returns a number with 3 or 4 digits, which is easy to work with later
     private int parseHoursToInt(String hours){
         int result = 0;
@@ -134,6 +202,19 @@ public class ParkingTestGenerator {
         return result;
     }
 
+    private void cleanUp(){
+        for(String s : generatedRegistrationsForToday){
+            generatedPayments.remove(s);
+        }
+        generatedRegistrationsForToday.clear();
+        for(String s : generatedRegistrationsForTomorrow){
+            String h = s;//String's immutability will guarantee that
+            //there won't be any problems with shallow copies
+            generatedRegistrationsForToday.add(s);
+        }
+        generatedRegistrationsForTomorrow.clear();
+    }
+
     private void generatePaymentTest(int lineNumber){
         //1. Generate Registration
         int typeOfRegistration = rand.nextInt(2);
@@ -157,9 +238,9 @@ public class ParkingTestGenerator {
         if(rand.nextInt(2) == 1){test.append(" ");}
 
         //3. add to the respective data structures
+        int beg = parseHoursToInt(begHour);
+        int end = parseHoursToInt(endHour);
         if(typeOfBegHour == 0 && typeOfEndHour == 0 && typeOfRegistration == 0){
-            int beg = parseHoursToInt(begHour);
-            int end = parseHoursToInt(endHour);
             if(beg < end){
                 generatedRegistrationsForToday.add(registration);
             }
@@ -171,18 +252,35 @@ public class ParkingTestGenerator {
             generatedRegistrationsForToday.add(registration);
         }
         generatedPayments.put(registration, new String[]{begHour, endHour});
+        textToWriteInFile.add(registration + " " + begHour + " " + endHour);
         if(typeOfBegHour == 0 && typeOfEndHour == 0 && typeOfRegistration == 0){
-            System.out.println("OK " + lineNumber);
+            if(beg < end && end - beg >= 0){
+                textToWriteOutFile.add("OK " + lineNumber);
+            }
+            else{
+                textToWriteOutFile.add("Error " + lineNumber);
+            }
         }
         else {
-            System.out.println("Error " + lineNumber);
+            textToWriteOutFile.add("Error " + lineNumber);
         }
     }
     private void generateValidationTest(int lineNumber){
         //1. Generate registration
         int typeOfRegistration = rand.nextInt(2);
         StringBuilder test = new StringBuilder();
-        String registration = createRegistration(typeOfRegistration);
+        String registration = "";
+        int dayToUse = rand.nextInt(2);
+        if(typeOfRegistration == 0){
+            registration = useExistingRegistration(dayToUse);
+        }
+        else{
+            registration = createRegistration(typeOfRegistration);
+        }
+        if(registration.equals("")){
+            typeOfRegistration = 1;
+            registration = createRegistration(typeOfRegistration);
+        }
         test.append(registration);
         test.append(" ");
         //2. Generate current time
@@ -191,10 +289,39 @@ public class ParkingTestGenerator {
         test.append(currentHour);
         //3. Check whether we are still in "today" or not
         //and print results accordingly
-
+        int beg = parseHoursToInt(generatedPayments.get(registration)[0]);
+        int end = parseHoursToInt(generatedPayments.get(registration)[1]);
+        int generatedTime = parseHoursToInt(currentHour);
+        if(typeOfRegistration == 0 && typeOfCurrentHour == 0){//valid strings were created
+            if(beg < end){//today
+                if(generatedTime >= beg && generatedTime <= end){
+                    textToWriteOutFile.add("YES " + lineNumber);
+                }
+                else{
+                    textToWriteOutFile.add("NO " + lineNumber);
+                }
+            }
+            else{//tomorrow
+                if((generatedTime >= beg && generatedTime <= 2000) || (generatedTime >= 800 && generatedTime <= end)){
+                    textToWriteOutFile.add("YES " + lineNumber);
+                    //in case of valid tomorrow, we have to fill today's array with tomorrow's, and
+                    //then clean the tomorrow's array. Also, it would be nice to free some space
+                    //in the generatedPayments map.
+                    cleanUp();
+                }
+                else{
+                    textToWriteOutFile.add("NO " + lineNumber);
+                }
+            }
+        }
+        else{//innvalid strings were created
+            textToWriteOutFile.add("ERROR " + lineNumber);
+        }
+        textToWriteInFile.add(registration + " " + currentHour);
     }
 
     public void generateTest(int lineNumber){
+        if(!createPaths()){return;}
         if(generatedPayments.isEmpty()){//we have no cars to test
             generatePaymentTest(lineNumber);
         }
@@ -209,7 +336,10 @@ public class ParkingTestGenerator {
             }
         }
     }
-    public static void main(String[] args) {
-        System.out.println("Hello world! sdsds");
+    public static void main(String[] args) throws IOException {
+        ParkingTestGenerator ptg = new ParkingTestGenerator();
+        for(int i = 1; i <= 10; ++i){
+            ptg.generateTest(i);
+        }
     }
 }
