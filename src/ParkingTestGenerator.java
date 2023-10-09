@@ -6,7 +6,7 @@ public class ParkingTestGenerator {
     private static final Random rand = new Random();
     private List<String> generatedRegistrationsForToday = new ArrayList<>();
     private List<String> generatedRegistrationsForTomorrow = new ArrayList<>();
-    private Map<String, int[]> generatedPayments = new HashMap<>();
+    private Map<String, String[]> generatedPayments = new HashMap<>();
 
     private String createValidRegistration(){
         StringBuilder registration = new StringBuilder();
@@ -120,12 +120,14 @@ public class ParkingTestGenerator {
         //1. Generate Registration
         int typeOfTheRegistration = rand.nextInt(2);
         StringBuilder test = new StringBuilder();
+        String registration;
         if(typeOfTheRegistration == 0){//We will make a test with a valid registration
-            test.append(createValidRegistration());
+            registration = createValidRegistration();
         }
         else{//We will make a test with an invalid registration
-            test.append(createInvalidHour());
+            registration = createInvalidHour();
         }
+        test.append(registration);
         test.append(" ");
 
         //2. Generate beg and end hours
@@ -155,12 +157,25 @@ public class ParkingTestGenerator {
         if(rand.nextInt(2) == 1){test.append(" ");}
 
         //3. add to the respective data structures
-        if(typeOfTheBegHour == 0 && typeOfTheEndHour == 0){
+        if(typeOfTheBegHour == 0 && typeOfTheEndHour == 0 && typeOfTheRegistration == 0){
             int beg = parseHoursToInt(begHour);
             int end = parseHoursToInt(endHour);
+            if(beg < end){
+                generatedRegistrationsForToday.add(registration);
+            }
+            else{
+                generatedRegistrationsForTomorrow.add(registration);
+            }
         }
         else{
-
+            generatedRegistrationsForToday.add(registration);
+        }
+        generatedPayments.put(registration, new String[]{begHour, endHour});
+        if(typeOfTheBegHour == 0 && typeOfTheEndHour == 0 && typeOfTheRegistration == 0){
+            System.out.println("OK " + lineNumber);
+        }
+        else {
+            System.out.println("Error " + lineNumber);
         }
     }
     private void generateValidationTest(int lineNumber){
