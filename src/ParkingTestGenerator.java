@@ -159,25 +159,6 @@ public class ParkingTestGenerator {
         }
     }
 
-    //Hours are guaranteed to be between beg and end, but not minutes.
-    private String createHourBasedOnOtherHours(int beg, int end){
-        StringBuilder result = new StringBuilder();
-        if(beg < end){
-            int hours = (beg/100) - (end/100);
-            result.append((char)(rand.nextInt(hours)+8)).append('.').append((char)(rand.nextInt(60)));
-        }
-        else{
-            if(rand.nextInt(2) == 0){//check yesterday
-                result.append((char)(rand.nextInt(20-beg)+beg)).append('.').append((char)(rand.nextInt(60)));
-            }
-            else{//check tomorrow
-                result.append((char)(rand.nextInt(end-8)+8)).append('.').append((char)(rand.nextInt(60)));
-            }
-        }
-
-        return result.toString();
-    }
-
     //Returns a number with 3 or 4 digits, which is easy to work with later
     private int parseHoursToInt(String hours){
         int result = 0;
