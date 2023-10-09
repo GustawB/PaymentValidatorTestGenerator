@@ -11,6 +11,8 @@ public class ParkingTestGenerator {
     private final Random rand = new Random();
     private Path inPath = null;
     private Path outPath = null;
+    private int prevTime = -1;
+    private int nrOfNextDayUpdates = 0;
     private List<String> textToWriteInFile = new ArrayList<>();
     private List<String> textToWriteOutFile = new ArrayList<>();
     private List<String> generatedRegistrationsForToday = new ArrayList<>();
@@ -227,16 +229,24 @@ public class ParkingTestGenerator {
             textToWriteOutFile.add("ERROR " + lineNumber);
         }
         else if(typeOfBegHour != 1 && typeOfEndHour != 1 && typeOfRegistration != 1){
-            if(beg >= 800 && beg <= 2000 && end <= 2000){
+            if(beg >= 800 && beg <= 2000 && end >= 800 &&  end <= 2000){
                 if(beg < end && end - beg >= 10){
-                    generatedPayments.put(registration, new String[]{begHour, endHour});
+                    if(beg <= prevTime){
+                        cleanUp();//Updating today's day
+                    }
                     generatedRegistrationsForToday.add(registration);
+                    generatedPayments.put(registration, new String[]{begHour, endHour});
                     textToWriteOutFile.add("OK " + lineNumber);
+                    prevTime = beg;
                 }
                 else if(beg > end){
+                    if(beg <= prevTime){
+                        cleanUp();//Updating today's day
+                    }
                     generatedPayments.put(registration, new String[]{begHour, endHour});
                     generatedRegistrationsForTomorrow.add(registration);
                     textToWriteOutFile.add("OK " + lineNumber);
+                    prevTime = beg;
                 }
                 else{
                     textToWriteOutFile.add("ERROR " + lineNumber);
@@ -276,36 +286,33 @@ public class ParkingTestGenerator {
         //3. Check whether we are still in "today" or not
         //and print results accordingly
         int generatedTime = parseHoursToInt(currentHour);
-        if(typeOfRegistration != 1 && typeOfCurrentHour != 1){//valid strings were created
+        if(generatedTime < 800 || generatedTime > 2000){textToWriteOutFile.add("ERROR " + lineNumber);}
+        else if(typeOfRegistration != 1 && typeOfCurrentHour != 1){//valid strings were created
             int beg = parseHoursToInt(generatedPayments.get(registration)[0]);
             int end = parseHoursToInt(generatedPayments.get(registration)[1]);
-            if(beg >= 800 && beg <= 2000 && end >= 800 && end <= 2000){
-                if(beg < end){//today
-                    if(generatedTime >= beg && generatedTime <= end){
-                        textToWriteOutFile.add("YES " + lineNumber);
-                    }
-                    else{
-                        textToWriteOutFile.add("NO " + lineNumber);
-                    }
+            if(beg < end){//today
+                if(generatedTime >= beg && generatedTime <= end){
+                    textToWriteOutFile.add("YES " + lineNumber);
                 }
-                else{//tomorrow
-                    if((generatedTime >= beg && generatedTime <= 2000) || (generatedTime >= 800 && generatedTime <= end)){
-                        textToWriteOutFile.add("YES " + lineNumber);
-                        //in case of valid tomorrow, we have to fill today's array with tomorrow's, and
-                        //then clean the tomorrow's array. Also, it would be nice to free some space
-                        //in the generatedPayments map.
-                        cleanUp();
-                    }
-                    else{
-                        textToWriteOutFile.add("NO " + lineNumber);
-                    }
+                else{
+                    textToWriteOutFile.add("NO " + lineNumber);
                 }
             }
-            else{
-                textToWriteOutFile.add("ERROR " + lineNumber);
+            else{//tomorrow
+                if((generatedTime >= beg) || (generatedTime <= end)){
+                    textToWriteOutFile.add("YES " + lineNumber);
+                    //in case of valid tomorrow, we have to fill today's array with tomorrow's, and
+                    //then clean the tomorrow's array. Also, it would be nice to free some space
+                    //in the generatedPayments map.
+                    cleanUp();
+                }
+                else{
+                    textToWriteOutFile.add("NO " + lineNumber);
+                }
             }
+            prevTime = beg;
         }
-        else{//innvalid strings were created
+        else{//invalid strings were created
             textToWriteOutFile.add("ERROR " + lineNumber);
         }
         textToWriteInFile.add(registration + " " + currentHour);
