@@ -91,6 +91,31 @@ public class ParkingTestGenerator {
         }
     }
 
+    //Returns a number with 3 or 4 digits, which is easy to work with later
+    private int parseHoursToInt(String hours){
+        int result = 0;
+        int iter = 0;
+        if(hours.length() == 4){
+            result += (hours.charAt(iter) - '0');
+            ++iter;
+        }
+        else{
+            result += (hours.charAt(iter) - '0');
+            result *= 10;
+            ++iter;
+            result += (hours.charAt(iter) - '0');
+            ++iter;
+        }
+        ++iter;
+        result *= 10;
+        result += (hours.charAt(iter) - '0');
+        ++iter;
+        result *= 10;
+        result += (hours.charAt(iter) - '0');
+
+        return result;
+    }
+
     private void generatePaymentTest(int lineNumber){
         //1. Generate Registration
         int typeOfTheRegistration = rand.nextInt(2);
@@ -105,27 +130,38 @@ public class ParkingTestGenerator {
 
         //2. Generate beg and end hours
         int typeOfTheBegHour = rand.nextInt(2);
+        String begHour;
         if(typeOfTheBegHour == 0){//Test with the valid beg hour
-            test.append(createValidHour());
+            begHour = createValidHour();
         }
         else{//Test with the invalid beg hour
-            test.append(createInvalidHour());
+            begHour = createInvalidHour();
         }
+        test.append(begHour);
         test.append(" ");
 
         int typeOfTheEndHour = rand.nextInt(2);
+        String endHour;
         if(typeOfTheEndHour == 0){//Test with the valid end hour
-            test.append(createValidHour());
+            endHour = createValidHour();
         }
         else{//Test with the invalid end hour
-            test.append(createInvalidHour());
+            endHour = createInvalidHour();
         }
+        test.append(endHour);
 
         //Test can (but doesn't have to) end with " ",
         // and it shouldn't have any impact on the result
         if(rand.nextInt(2) == 1){test.append(" ");}
-        //3. add to the respective data structures
 
+        //3. add to the respective data structures
+        if(typeOfTheBegHour == 0 && typeOfTheEndHour == 0){
+            int beg = parseHoursToInt(begHour);
+            int end = parseHoursToInt(endHour);
+        }
+        else{
+
+        }
     }
     private void generateValidationTest(int lineNumber){
 
