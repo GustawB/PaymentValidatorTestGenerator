@@ -49,6 +49,15 @@ public class ParkingTestGenerator {
         }
     }
 
+    private String createRegistration(int typeOfRegistration){
+        if(typeOfRegistration == 0){//We will make a test with a valid registration
+            return createValidRegistration();
+        }
+        else{//We will make a test with an invalid registration
+            return createInvalidHour();
+        }
+    }
+
     private String createValidHour(){
         int hourLength = rand.nextInt(2);
         ++hourLength;// We want hour to have the length of 1 or 2, not 0 or 1.
@@ -91,6 +100,15 @@ public class ParkingTestGenerator {
         }
     }
 
+    private String createHour(int typeOfHour){
+        if(typeOfHour == 0){//Test with the valid beg hour
+            return createValidHour();
+        }
+        else{//Test with the invalid beg hour
+            return createInvalidHour();
+        }
+    }
+
     //Returns a number with 3 or 4 digits, which is easy to work with later
     private int parseHoursToInt(String hours){
         int result = 0;
@@ -118,38 +136,20 @@ public class ParkingTestGenerator {
 
     private void generatePaymentTest(int lineNumber){
         //1. Generate Registration
-        int typeOfTheRegistration = rand.nextInt(2);
+        int typeOfRegistration = rand.nextInt(2);
         StringBuilder test = new StringBuilder();
-        String registration;
-        if(typeOfTheRegistration == 0){//We will make a test with a valid registration
-            registration = createValidRegistration();
-        }
-        else{//We will make a test with an invalid registration
-            registration = createInvalidHour();
-        }
+        String registration = createRegistration(typeOfRegistration);
         test.append(registration);
         test.append(" ");
 
         //2. Generate beg and end hours
-        int typeOfTheBegHour = rand.nextInt(2);
-        String begHour;
-        if(typeOfTheBegHour == 0){//Test with the valid beg hour
-            begHour = createValidHour();
-        }
-        else{//Test with the invalid beg hour
-            begHour = createInvalidHour();
-        }
+        int typeOfBegHour = rand.nextInt(2);
+        String begHour = createHour(typeOfBegHour);
         test.append(begHour);
         test.append(" ");
 
-        int typeOfTheEndHour = rand.nextInt(2);
-        String endHour;
-        if(typeOfTheEndHour == 0){//Test with the valid end hour
-            endHour = createValidHour();
-        }
-        else{//Test with the invalid end hour
-            endHour = createInvalidHour();
-        }
+        int typeOfEndHour = rand.nextInt(2);
+        String endHour = createHour(typeOfEndHour);
         test.append(endHour);
 
         //Test can (but doesn't have to) end with " ",
@@ -157,7 +157,7 @@ public class ParkingTestGenerator {
         if(rand.nextInt(2) == 1){test.append(" ");}
 
         //3. add to the respective data structures
-        if(typeOfTheBegHour == 0 && typeOfTheEndHour == 0 && typeOfTheRegistration == 0){
+        if(typeOfBegHour == 0 && typeOfEndHour == 0 && typeOfRegistration == 0){
             int beg = parseHoursToInt(begHour);
             int end = parseHoursToInt(endHour);
             if(beg < end){
@@ -171,7 +171,7 @@ public class ParkingTestGenerator {
             generatedRegistrationsForToday.add(registration);
         }
         generatedPayments.put(registration, new String[]{begHour, endHour});
-        if(typeOfTheBegHour == 0 && typeOfTheEndHour == 0 && typeOfTheRegistration == 0){
+        if(typeOfBegHour == 0 && typeOfEndHour == 0 && typeOfRegistration == 0){
             System.out.println("OK " + lineNumber);
         }
         else {
@@ -179,6 +179,18 @@ public class ParkingTestGenerator {
         }
     }
     private void generateValidationTest(int lineNumber){
+        //1. Generate registration
+        int typeOfRegistration = rand.nextInt(2);
+        StringBuilder test = new StringBuilder();
+        String registration = createRegistration(typeOfRegistration);
+        test.append(registration);
+        test.append(" ");
+        //2. Generate current time
+        int typeOfCurrentHour = rand.nextInt(2);
+        String currentHour = createHour(typeOfCurrentHour);
+        test.append(currentHour);
+        //3. Check whether we are still in "today" or not
+        //and print results accordingly
 
     }
 
