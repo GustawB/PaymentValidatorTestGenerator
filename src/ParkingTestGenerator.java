@@ -12,7 +12,6 @@ public class ParkingTestGenerator {
     private Path inPath = null;
     private Path outPath = null;
     private int prevTime = -1;
-    private int nrOfNextDayUpdates = 0;
     private List<String> textToWriteInFile = new ArrayList<>();
     private List<String> textToWriteOutFile = new ArrayList<>();
     private List<String> generatedRegistrationsForToday = new ArrayList<>();
@@ -195,7 +194,7 @@ public class ParkingTestGenerator {
         for(String s : generatedRegistrationsForTomorrow){
             String h = s;//String's immutability will guarantee that
             //there won't be any problems with shallow copies
-            generatedRegistrationsForToday.add(s);
+            generatedRegistrationsForToday.add(h);
         }
         generatedRegistrationsForTomorrow.clear();
     }
@@ -291,6 +290,9 @@ public class ParkingTestGenerator {
             int beg = parseHoursToInt(generatedPayments.get(registration)[0]);
             int end = parseHoursToInt(generatedPayments.get(registration)[1]);
             if(beg < end){//today
+                if(generatedTime <= prevTime){
+                    cleanUp();//Updating today's day
+                }
                 if(generatedTime >= beg && generatedTime <= end){
                     textToWriteOutFile.add("YES " + lineNumber);
                 }
@@ -299,6 +301,9 @@ public class ParkingTestGenerator {
                 }
             }
             else{//tomorrow
+                if(generatedTime <= prevTime){
+                    cleanUp();//Updating today's day
+                }
                 if((generatedTime >= beg) || (generatedTime <= end)){
                     textToWriteOutFile.add("YES " + lineNumber);
                     //in case of valid tomorrow, we have to fill today's array with tomorrow's, and
